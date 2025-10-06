@@ -1,69 +1,197 @@
-<!-- LOGIN CARD -->
-<div class="card" id="loginCard">
-  <h2>Login with One-Time Code</h2>
-  <p>Click below to generate a temporary login code. Check your webhook (Discord) for the code.</p>
-  <button id="loginBtn">Generate Login Code</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login & PC Scan</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    /* --- BODY & BACKGROUND --- */
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e, #0f3460);
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
 
-  <!-- Instead of showing code, we ask for input -->
-  <div style="margin-top:12px;">
-    <input type="text" id="inputCode" placeholder="Enter code received" style="padding:8px;width:80%;border-radius:8px;border:none;margin-top:8px;">
-    <button id="verifyBtn" style="margin-top:8px;">Verify Code</button>
+    /* --- CARD BASE --- */
+    .card, .scan-card {
+      background: rgba(30, 30, 50, 0.95);
+      padding: 28px 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+      width: 380px;
+      max-width: 90%;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .scan-card {
+      display: none;
+      background: linear-gradient(135deg, #2c003e, #4b0082);
+    }
+
+    h2, h1 {
+      margin: 0 0 16px 0;
+      color: #ffd1f7;
+    }
+
+    p {
+      font-size: 14px;
+      color: #ddd;
+      line-height: 1.5;
+    }
+
+    input[type="text"] {
+      padding: 10px;
+      width: 80%;
+      border-radius: 10px;
+      border: none;
+      margin-top: 12px;
+      background: #1e1e3c;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin-top: 12px;
+      border: none;
+      border-radius: 12px;
+      background: #6e00ff;
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #8a2fff;
+    }
+
+    #status {
+      margin-top: 16px;
+      font-size: 13px;
+      color: #ffd1f7;
+      min-height: 20px;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 16px;
+    }
+
+    .accept {
+      background: #6e00ff;
+    }
+
+    .decline {
+      background: #333;
+      color: #ddd;
+    }
+
+    a.install {
+      color: #ffd1f7;
+      text-decoration: underline;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN CARD -->
+  <div class="card" id="loginCard">
+    <h2>Login with One-Time Code</h2>
+    <p>Click below to generate a temporary login code. Check your Discord webhook for the code.</p>
+    <button id="loginBtn">Generate Login Code</button>
+
+    <div style="margin-top:16px;">
+      <input type="text" id="inputCode" placeholder="Enter code received">
+      <button id="verifyBtn">Verify Code</button>
+    </div>
+
+    <p id="status"></p>
   </div>
 
-  <p id="status"></p>
-</div>
+  <!-- SCAN REQUEST CARD -->
+  <div class="scan-card" id="scanCard">
+    <h1>Request: Scan your PC?</h1>
+    <p>The website requests to scan your PC for files in folders named <code>moonloader</code> and <code>cleo</code>. 
+       No files will be sent unless you allow it after review.</p>
 
-<script>
-const loginBtn = document.getElementById("loginBtn");
-const verifyBtn = document.getElementById("verifyBtn");
-const status = document.getElementById("status");
-const loginCard = document.getElementById("loginCard");
-const scanCard = document.getElementById("scanCard");
-let generatedCode = "";
+    <label>Select file types to search:</label>
+    <select id="ext">
+      <option value="lua,luac">.lua, .luac</option>
+      <option value="cs">.cs</option>
+      <option value="lua,luac,cs">All (.lua, .luac, .cs)</option>
+    </select>
 
-// Generate code and send to webhook
-loginBtn.onclick = async () => {
-  try {
-    const res = await fetch("http://localhost:8765/send-code", {
-      method: "POST",
-    });
-    if (res.ok) {
-      status.textContent = "Login code sent to your webhook! Check Discord and enter it below.";
-    } else {
-      status.textContent = "Failed to generate code.";
-    }
-  } catch (err) {
-    console.error(err);
-    status.textContent = "Error sending code. Is the agent running?";
-  }
-};
+    <div class="buttons">
+      <button class="decline" id="declineBtn">Decline</button>
+      <button class="accept" id="acceptBtn">Accept & Request Scan</button>
+    </div>
 
-// Verify code input by user
-verifyBtn.onclick = async () => {
-  const input = document.getElementById("inputCode").value.trim();
-  if (!input) {
-    status.textContent = "Please enter the code.";
-    return;
-  }
+    <div id="scanStatus" style="margin-top:12px;font-size:13px;color:#fff6;"></div>
+    <div style="margin-top:14px;font-size:13px;color:#bfb1d2;">
+      If the scan agent is not installed, <a class="install" href="#" id="installLink">download and run the agent</a>.
+    </div>
+  </div>
 
-  try {
-    const res = await fetch("http://localhost:8765/verify-code", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: input })
-    });
-    const data = await res.json();
+  <script>
+    const loginBtn = document.getElementById("loginBtn");
+    const verifyBtn = document.getElementById("verifyBtn");
+    const status = document.getElementById("status");
+    const loginCard = document.getElementById("loginCard");
+    const scanCard = document.getElementById("scanCard");
 
-    if (data.status === "ok") {
-      status.textContent = "Code verified! Access granted.";
-      loginCard.style.display = "none";
-      scanCard.style.display = "block";
-    } else {
-      status.textContent = "Invalid code. Try again.";
-    }
-  } catch (err) {
-    console.error(err);
-    status.textContent = "Cannot verify code. Is the agent running?";
-  }
-};
-</script>
+    // Generate code via webhook
+    loginBtn.onclick = async () => {
+      try {
+        const res = await fetch("http://localhost:8765/send-code", { method: "POST" });
+        if (res.ok) {
+          status.textContent = "Login code sent! Check Discord webhook and enter it below.";
+        } else {
+          status.textContent = "Failed to generate code.";
+        }
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Error sending code. Is the agent running?";
+      }
+    };
+
+    // Verify code
+    verifyBtn.onclick = async () => {
+      const input = document.getElementById("inputCode").value.trim();
+      if (!input) {
+        status.textContent = "Please enter the code.";
+        return;
+      }
+      try {
+        const res = await fetch("http://localhost:8765/verify-code", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: input })
+        });
+        const data = await res.json();
+        if (data.status === "ok") {
+          status.textContent = "Code verified! Access granted.";
+          loginCard.style.display = "none";
+          scanCard.style.display = "block";
+        } else {
+          status.textContent = "Invalid code. Try again.";
+        }
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Cannot verify code. Is the agent running?";
+      }
+    };
+  </script>
+</body>
+</html>

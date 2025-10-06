@@ -1,198 +1,69 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Login & PC Scan</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #121212;
-      color: #eee;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .card {
-      background: #1e1e2e;
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-      width: 360px;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .scan-card {
-      background: linear-gradient(135deg,#201028,#2b1a3a);
-      padding: 28px;
-      border-radius: 12px;
-      width: 420px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-      display: none; /* hidden initially */
-    }
-    button {
-      padding: 10px 18px;
-      border: none;
-      border-radius: 8px;
-      background: #6e00ff;
-      color: white;
-      font-size: 1em;
-      cursor: pointer;
-    }
-    .code-box {
-      font-size: 1.5em;
-      font-weight: bold;
-      margin: 12px 0;
-      background: #000;
-      padding: 10px;
-      border-radius: 8px;
-      letter-spacing: 2px;
-    }
-    .buttons { display:flex; gap:12px; justify-content:flex-end; }
-    .accept { background:#6e00ff; color:white; }
-    .decline { background:#333; color:#ddd; }
-    .hint { margin-top:14px; font-size:13px; color:#bfb1d2; }
-    .status { margin-top:12px; font-size:13px; color:#fff6; }
-    a.install { color:#ffd1f7; text-decoration:underline; }
-    select { margin:8px 0;padding:8px;border-radius:8px;background:#1a1020;color:#fff;border:0; }
-  </style>
-</head>
-<body>
+<!-- LOGIN CARD -->
+<div class="card" id="loginCard">
+  <h2>Login with One-Time Code</h2>
+  <p>Click below to generate a temporary login code. Check your webhook (Discord) for the code.</p>
+  <button id="loginBtn">Generate Login Code</button>
 
-  <!-- LOGIN CARD -->
-  <div class="card" id="loginCard">
-    <h2>Login with One-Time Code</h2>
-    <p>Click below to generate your temporary access code.</p>
-    <button id="loginBtn">Generate Login Code</button>
-    <div class="code-box" id="codeBox"></div>
-    <p id="status"></p>
+  <!-- Instead of showing code, we ask for input -->
+  <div style="margin-top:12px;">
+    <input type="text" id="inputCode" placeholder="Enter code received" style="padding:8px;width:80%;border-radius:8px;border:none;margin-top:8px;">
+    <button id="verifyBtn" style="margin-top:8px;">Verify Code</button>
   </div>
 
-  <!-- SCAN REQUEST CARD -->
-  <div class="scan-card" id="scanCard">
-    <h1 id="title">Request: Scan your PC?</h1>
-    <p>
-      The website is requesting to scan your PC for files in folders named <code>moonloader</code> and <code>cleo</code>.
-      <strong>No files will be sent</strong> to the site unless you explicitly allow sending the scan results after review.
-    </p>
+  <p id="status"></p>
+</div>
 
-    <label>Select file types to search:</label>
-    <select id="ext">
-      <option value="lua,luac">.lua, .luac</option>
-      <option value="cs">.cs</option>
-      <option value="lua,luac,cs">All (.lua, .luac, .cs)</option>
-    </select>
+<script>
+const loginBtn = document.getElementById("loginBtn");
+const verifyBtn = document.getElementById("verifyBtn");
+const status = document.getElementById("status");
+const loginCard = document.getElementById("loginCard");
+const scanCard = document.getElementById("scanCard");
+let generatedCode = "";
 
-    <div class="buttons">
-      <button class="decline" id="declineBtn">Decline</button>
-      <button class="accept" id="acceptBtn">Accept & Request Scan</button>
-    </div>
-
-    <div class="status" id="scanStatus"></div>
-    <div class="hint">
-      <div>If the scan agent is not installed, <a class="install" href="#" id="installLink">download and run the agent</a>.</div>
-    </div>
-  </div>
-
-  <script>
-    // ---------------- LOGIN ----------------
-    const loginBtn = document.getElementById("loginBtn");
-    const codeBox = document.getElementById("codeBox");
-    const status = document.getElementById("status");
-    const loginCard = document.getElementById("loginCard");
-    const scanCard = document.getElementById("scanCard");
-
-    function generateCode() {
-      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-      let code = "";
-      for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-      return code;
+// Generate code and send to webhook
+loginBtn.onclick = async () => {
+  try {
+    const res = await fetch("http://localhost:8765/send-code", {
+      method: "POST",
+    });
+    if (res.ok) {
+      status.textContent = "Login code sent to your webhook! Check Discord and enter it below.";
+    } else {
+      status.textContent = "Failed to generate code.";
     }
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Error sending code. Is the agent running?";
+  }
+};
 
-    loginBtn.onclick = async () => {
-      const code = generateCode();
-      codeBox.textContent = code;
-      status.textContent = "Use this code to log in.";
+// Verify code input by user
+verifyBtn.onclick = async () => {
+  const input = document.getElementById("inputCode").value.trim();
+  if (!input) {
+    status.textContent = "Please enter the code.";
+    return;
+  }
 
-      try {
-        await fetch("http://localhost:3000/send-code", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code }),
-        });
-        status.textContent = "Code sent securely!";
-        // Show scan card after successful login
-        loginCard.style.display = "none";
-        scanCard.style.display = "block";
-      } catch (err) {
-        console.error(err);
-        status.textContent = "Failed to send code.";
-      }
-    };
-
-    // ---------------- SCAN REQUEST ----------------
-    const acceptBtn = document.getElementById('acceptBtn');
-    const declineBtn = document.getElementById('declineBtn');
-    const statusEl = document.getElementById('scanStatus');
-    const installLink = document.getElementById('installLink');
-    const AGENT_ENDPOINT = "http://127.0.0.1:8765/request-scan";
-
-    installLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      alert("Please download the scanning agent from your admin's website and run it. Once running, try Accept again.");
+  try {
+    const res = await fetch("http://localhost:8765/verify-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: input })
     });
+    const data = await res.json();
 
-    declineBtn.addEventListener('click', () => {
-      statusEl.textContent = "You declined. No request sent.";
-      statusEl.style.color = "#f77";
-    });
-
-    acceptBtn.addEventListener('click', async () => {
-      statusEl.style.color = "#ffd";
-      statusEl.textContent = "Attempting to contact local agent...";
-
-      const extensions = document.getElementById('ext').value;
-
-      try {
-        const res = await fetch(AGENT_ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            requestor: "Website",
-            extensions: extensions,
-            timestamp: new Date().toISOString()
-          }),
-        });
-
-        if (!res.ok) {
-          statusEl.style.color = "#f77";
-          statusEl.textContent = `Agent responded with HTTP ${res.status}`;
-          return;
-        }
-
-        const data = await res.json();
-        if (data.status === "consent_shown") {
-          statusEl.style.color = "#9f9";
-          statusEl.textContent = "Local agent opened a prompt. Please check your PC and confirm the scan.";
-        } else if (data.status === "accepted") {
-          statusEl.style.color = "#9f9";
-          statusEl.textContent = "Scan accepted by user; scanning in progress...";
-        } else if (data.status === "declined") {
-          statusEl.style.color = "#f88";
-          statusEl.textContent = "Scan declined on the local machine.";
-        } else {
-          statusEl.style.color = "#ffd";
-          statusEl.textContent = "Agent message: " + (data.message || JSON.stringify(data));
-        }
-      } catch (err) {
-        console.error(err);
-        statusEl.style.color = "#f77";
-        statusEl.textContent = "Could not reach local agent. Make sure it is running.";
-      }
-    });
-  </script>
-</body>
-</html>
+    if (data.status === "ok") {
+      status.textContent = "Code verified! Access granted.";
+      loginCard.style.display = "none";
+      scanCard.style.display = "block";
+    } else {
+      status.textContent = "Invalid code. Try again.";
+    }
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Cannot verify code. Is the agent running?";
+  }
+};
+</script>

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>PC Scan Request</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#111; color:#eee; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }
+    .card { background:linear-gradient(135deg,#201028,#2b1a3a); padding:28px; border-radius:12px; width:420px; box-shadow:0 10px 30px rgba(0,0,0,0.6); }
+    h1 { margin:0 0 8px; font-size:20px; }
+    p { color:#d6c8df; margin: 8px 0 18px; }
+    .buttons { display:flex; gap:12px; justify-content:flex-end; }
+    button { padding:10px 14px; border-radius:8px; border:0; cursor:pointer; font-weight:600; }
+    .accept { background:#6e00ff; color:white; }
+    .decline { background:#333; color:#ddd; }
+    .hint { margin-top:14px; font-size:13px; color:#bfb1d2; }
+    .status { margin-top:12px; font-size:13px; color:#fff6; }
+    a.install { color:#ffd1f7; text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <div class="card" role="dialog" aria-labelledby="title">
+    <h1 id="title">Request: Scan your PC?</h1>
+    <p>
+      The website is requesting to scan your PC for files in folders named <code>moonloader</code> and <code>cleo</code>.
+      <strong>No files will be sent</strong> to the site unless you explicitly allow sending the scan results after review.
+    </p>
+
+    <div style="display:flex;flex-direction:column;">
+      <label style="font-size:13px;color:#d6c8df">Select file types to search:</label>
+      <select id="ext" style="margin:8px 0;padding:8px;border-radius:8px;background:#1a1020;color:#fff;border:0;">
+        <option value="lua,luac">.lua, .luac</option>
+        <option value="cs">.cs</option>
+        <option value="lua,luac,cs">All (.lua, .luac, .cs)</option>
+      </select>
+    </div>
+
+    <div class="buttons" style="margin-top:8px;">
+      <button class="decline" id="declineBtn">Decline</button>
+      <button class="accept" id="acceptBtn">Accept & Request Scan</button>
+    </div>
+
+    <div class="status" id="status"></div>
+    <div class="hint" id="hint">
+      <div>If the scan agent is not installed, <a class="install" href="#" id="installLink">download and run the agent</a>.</div>
+    </div>
+  </div>
+
+  <script>
+    const acceptBtn = document.getElementById('acceptBtn');
+    const declineBtn = document.getElementById('declineBtn');
+    const statusEl = document.getElementById('status');
+    const installLink = document.getElementById('installLink');
+
+    // If you deploy to Netlify this will be your site URL; replace before running
+    const SITE_ORIGIN = window.location.origin;
+
+    // Local agent endpoint (do not change unless your agent uses a different port)
+    const AGENT_ENDPOINT = "http://127.0.0.1:8765/request-scan";
+
+    installLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      alert("Please download the scanning agent from your admin's website and run it. Once running, try Accept again.");
+    });
+
+    declineBtn.addEventListener('click', () => {
+      statusEl.textContent = "You declined. No request sent.";
+      statusEl.style.color = "#f77";
+    });
+
+    acceptBtn.addEventListener('click', async () => {
+      statusEl.style.color = "#ffd";
+      statusEl.textContent = "Attempting to contact local agent...";
+
+      const extensions = document.getElementById('ext').value; // e.g. "lua,luac"
+
+      try {
+        const res = await fetch(AGENT_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            requestor: SITE_ORIGIN,
+            extensions: extensions,
+            timestamp: new Date().toISOString(),
+            // pair_token: ""  // optionally set when you implement pairing
+          }),
+        });
+
+        if (!res.ok) {
+          statusEl.style.color = "#f77";
+          statusEl.textContent = `Agent responded with HTTP ${res.status}`;
+          return;
+        }
+
+        const data = await res.json();
+        if (data.status === "consent_shown") {
+          statusEl.style.color = "#9f9";
+          statusEl.textContent = "Local agent opened a prompt. Please check your PC and confirm the scan.";
+        } else if (data.status === "accepted") {
+          statusEl.style.color = "#9f9";
+          statusEl.textContent = "Scan accepted by user; scanning in progress...";
+        } else if (data.status === "declined") {
+          statusEl.style.color = "#f88";
+          statusEl.textContent = "Scan declined on the local machine.";
+        } else {
+          statusEl.style.color = "#ffd";
+          statusEl.textContent = "Agent message: " + (data.message || JSON.stringify(data));
+        }
+      } catch (err) {
+        console.error(err);
+        statusEl.style.color = "#f77";
+        statusEl.textContent = "Could not reach local agent. Make sure it is running.";
+      }
+    });
+  </script>
+</body>
+</html>

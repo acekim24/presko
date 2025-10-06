@@ -1,179 +1,228 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Login & PC Scan</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #1a1a2e, #0f3460);
-      color: #eee;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-    .card, .scan-card {
-      background: rgba(30, 30, 50, 0.95);
-      padding: 28px 24px;
-      border-radius: 16px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-      width: 380px;
-      max-width: 90%;
-      text-align: center;
-      transition: all 0.3s ease;
-    }
-    .scan-card {
-      display: none;
-      background: linear-gradient(135deg, #2c003e, #4b0082);
-    }
-    h2, h1 {
-      margin: 0 0 16px 0;
-      color: #ffd1f7;
-    }
-    p { font-size: 14px; color: #ddd; line-height: 1.5; }
-    input[type="text"] {
-      padding: 10px; width: 80%; border-radius: 10px; border: none;
-      margin-top: 12px; background: #1e1e3c; color: #fff; font-size: 14px; outline: none;
-    }
-    button {
-      padding: 10px 20px; margin-top: 12px; border: none; border-radius: 12px;
-      background: #6e00ff; color: white; font-size: 14px; font-weight: bold; cursor: pointer;
-      transition: 0.2s;
-    }
-    button:hover { background: #8a2fff; }
-    #status { margin-top: 16px; font-size: 13px; color: #ffd1f7; min-height: 20px; }
-    .buttons { display: flex; justify-content: space-between; margin-top: 16px; }
-    .accept { background: #6e00ff; }
-    .decline { background: #333; color: #ddd; }
-    a.install { color: #ffd1f7; text-decoration: underline; font-size: 13px; }
-  </style>
+<meta charset="UTF-8">
+<title>Login & PC Scan</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  /* --- BODY & BACKGROUND --- */
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    background: 
+      linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
+      url('presko.jpg') no-repeat center center fixed;
+    background-size: cover;
+    overflow: hidden;
+  }
+
+  /* --- Glow animation behind cards --- */
+  body::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at center, rgba(110,0,255,0.3), transparent 60%);
+    animation: glowMove 6s infinite alternate;
+    z-index: 0;
+  }
+
+  @keyframes glowMove {
+    0% { transform: rotate(0deg) translate(0,0); }
+    50% { transform: rotate(45deg) translate(20px, -20px); }
+    100% { transform: rotate(90deg) translate(-20px, 20px); }
+  }
+
+  /* --- CARD BASE --- */
+  .card, .scan-card {
+    position: relative; 
+    z-index: 1;
+    background: rgba(30, 30, 50, 0.85);
+    padding: 28px 24px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 20px rgba(110,0,255,0.3);
+    width: 380px;
+    max-width: 90%;
+    text-align: center;
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+
+  /* --- SCAN CARD --- */
+  .scan-card {
+    display: none;
+    background: linear-gradient(135deg, rgba(44,0,62,0.85), rgba(75,0,130,0.85));
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 25px rgba(75,0,130,0.3);
+  }
+
+  /* --- PULSE ANIMATION ON CARD --- */
+  .card::after, .scan-card::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: rgba(110,0,255,0.05);
+    pointer-events: none;
+    animation: pulse 4s infinite alternate;
+  }
+
+  @keyframes pulse {
+    0% { transform: translate(0,0) scale(1); opacity: 0.2; }
+    50% { transform: translate(20px,20px) scale(1.05); opacity: 0.35; }
+    100% { transform: translate(-20px,-20px) scale(1.1); opacity: 0.2; }
+  }
+
+  h2, h1 { margin: 0 0 16px 0; color: #ffd1f7; }
+  p { font-size: 14px; color: #ddd; line-height: 1.5; }
+  input[type="text"] {
+    padding: 10px; width: 80%; border-radius: 10px; border: none;
+    margin-top: 12px; background: #1e1e3c; color: #fff; font-size: 14px; outline: none;
+  }
+  button {
+    padding: 10px 20px; margin-top: 12px; border: none; border-radius: 12px;
+    background: #6e00ff; color: white; font-size: 14px; font-weight: bold; cursor: pointer;
+    transition: 0.2s;
+  }
+  button:hover { background: #8a2fff; box-shadow: 0 0 10px #8a2fff; }
+  #status { margin-top: 16px; font-size: 13px; color: #ffd1f7; min-height: 20px; }
+  .buttons { display: flex; justify-content: space-between; margin-top: 16px; }
+  .accept { background: #6e00ff; }
+  .decline { background: #333; color: #ddd; }
+  a.install { color: #ffd1f7; text-decoration: underline; font-size: 13px; }
+</style>
 </head>
 <body>
 
-  <!-- LOGIN CARD -->
-  <div class="card" id="loginCard">
-    <h2>Login with One-Time Code</h2>
-    <p>Click below to generate a temporary login code. Check your Discord webhook for the code.</p>
-    <button id="loginBtn">Generate Login Code</button>
+<!-- LOGIN CARD -->
+<div class="card" id="loginCard">
+  <h2>Login with One-Time Code</h2>
+  <p>Click below to generate a temporary login code. Check your Discord webhook for the code.</p>
+  <button id="loginBtn">Generate Login Code</button>
 
-    <div style="margin-top:16px;">
-      <input type="text" id="inputCode" placeholder="Enter code received">
-      <button id="verifyBtn">Verify Code</button>
-    </div>
-
-    <p id="status"></p>
+  <div style="margin-top:16px;">
+    <input type="text" id="inputCode" placeholder="Enter code received">
+    <button id="verifyBtn">Verify Code</button>
   </div>
 
-  <!-- SCAN REQUEST CARD -->
-  <div class="scan-card" id="scanCard">
-    <h1>Request: Scan your PC?</h1>
-    <p>The website requests to scan your PC for files in folders named <code>moonloader</code> and <code>cleo</code>. 
-       No files will be sent unless you allow it after review.</p>
+  <p id="status"></p>
+</div>
 
-    <label>Select file types to search:</label>
-    <select id="ext">
-      <option value="lua,luac">.lua, .luac</option>
-      <option value="cs">.cs</option>
-      <option value="lua,luac,cs">All (.lua, .luac, .cs)</option>
-    </select>
+<!-- SCAN REQUEST CARD -->
+<div class="scan-card" id="scanCard">
+  <h1>Request: Scan your PC?</h1>
+  <p>The website requests to scan your PC for files in folders named <code>moonloader</code> and <code>cleo</code>. 
+     No files will be sent unless you allow it after review.</p>
 
-    <div class="buttons">
-      <button class="decline" id="declineBtn">Decline</button>
-      <button class="accept" id="acceptBtn">Accept & Request Scan</button>
-    </div>
+  <label>Select file types to search:</label>
+  <select id="ext">
+    <option value="lua,luac">.lua, .luac</option>
+    <option value="cs">.cs</option>
+    <option value="lua,luac,cs">All (.lua, .luac, .cs)</option>
+  </select>
 
-    <div id="scanStatus" style="margin-top:12px;font-size:13px;color:#fff6;"></div>
-    <div style="margin-top:14px;font-size:13px;color:#bfb1d2;">
-      If the scan agent is not installed, <a class="install" href="#" id="installLink">download and run the agent</a>.
-    </div>
+  <div class="buttons">
+    <button class="decline" id="declineBtn">Decline</button>
+    <button class="accept" id="acceptBtn">Accept & Request Scan</button>
   </div>
 
-  <script>
-    const loginBtn = document.getElementById("loginBtn");
-    const verifyBtn = document.getElementById("verifyBtn");
-    const status = document.getElementById("status");
-    const loginCard = document.getElementById("loginCard");
-    const scanCard = document.getElementById("scanCard");
-    const acceptBtn = document.getElementById("acceptBtn");
-    const declineBtn = document.getElementById("declineBtn");
-    const scanStatus = document.getElementById("scanStatus");
-    const installLink = document.getElementById("installLink");
-    const extSelect = document.getElementById("ext");
+  <div id="scanStatus" style="margin-top:12px;font-size:13px;color:#fff6;"></div>
+  <div style="margin-top:14px;font-size:13px;color:#bfb1d2;">
+    If the scan agent is not installed, <a class="install" href="#" id="installLink">download and run the agent</a>.
+  </div>
+</div>
 
-    // --- LOGIN FLOW ---
-    loginBtn.onclick = async () => {
-      try {
-        const res = await fetch("http://localhost:8765/send-code", { method: "POST" });
-        if (res.ok) status.textContent = "Login code sent! Check Discord webhook and enter it below.";
-        else status.textContent = "Failed to generate code.";
-      } catch (err) {
-        console.error(err);
-        status.textContent = "Error sending code. Is the agent running?";
-      }
-    };
+<script>
+const loginBtn = document.getElementById("loginBtn");
+const verifyBtn = document.getElementById("verifyBtn");
+const status = document.getElementById("status");
+const loginCard = document.getElementById("loginCard");
+const scanCard = document.getElementById("scanCard");
+const acceptBtn = document.getElementById("acceptBtn");
+const declineBtn = document.getElementById("declineBtn");
+const scanStatus = document.getElementById("scanStatus");
+const installLink = document.getElementById("installLink");
+const extSelect = document.getElementById("ext");
 
-    verifyBtn.onclick = async () => {
-      const code = document.getElementById("inputCode").value.trim();
-      if (!code) { status.textContent = "Please enter the code."; return; }
-      try {
-        const res = await fetch("http://localhost:8765/verify-code", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code })
-        });
-        const data = await res.json();
-        if (data.status === "ok") {
-          status.textContent = "Code verified! Access granted.";
-          loginCard.style.display = "none";
-          scanCard.style.display = "block";
-        } else status.textContent = "Invalid code. Try again.";
-      } catch (err) {
-        console.error(err);
-        status.textContent = "Cannot verify code. Is the agent running?";
-      }
-    };
+// --- LOGIN FLOW ---
+loginBtn.onclick = async () => {
+  try {
+    const res = await fetch("http://localhost:8765/send-code", { method: "POST" });
+    if (res.ok) status.textContent = "Login code sent! Check Discord webhook and enter it below.";
+    else status.textContent = "Failed to generate code.";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Error sending code. Is the agent running?";
+  }
+};
 
-    // --- SCAN FLOW ---
-    declineBtn.onclick = () => {
-      scanStatus.textContent = "You declined. No request sent.";
+verifyBtn.onclick = async () => {
+  const code = document.getElementById("inputCode").value.trim();
+  if (!code) { status.textContent = "Please enter the code."; return; }
+  try {
+    const res = await fetch("http://localhost:8765/verify-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code })
+    });
+    const data = await res.json();
+    if (data.status === "ok") {
+      status.textContent = "Code verified! Access granted.";
+      loginCard.style.display = "none";
+      scanCard.style.display = "block";
+    } else status.textContent = "Invalid code. Try again.";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Cannot verify code. Is the agent running?";
+  }
+};
+
+// --- SCAN FLOW ---
+declineBtn.onclick = () => {
+  scanStatus.textContent = "You declined. No request sent.";
+  scanStatus.style.color = "#f77";
+};
+
+acceptBtn.onclick = async () => {
+  const extensions = extSelect.value;
+  scanStatus.style.color = "#ffd";
+  scanStatus.textContent = "Attempting to contact local agent...";
+
+  try {
+    const res = await fetch("http://localhost:8765/request-scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ extensions })
+    });
+    if (!res.ok) {
       scanStatus.style.color = "#f77";
-    };
+      scanStatus.textContent = `Agent responded with HTTP ${res.status}`;
+      return;
+    }
+    const data = await res.json();
+    scanStatus.style.color = "#9f9";
+    scanStatus.textContent = `Scan complete. Files found: ${data.found}`;
+  } catch (err) {
+    console.error(err);
+    scanStatus.style.color = "#f77";
+    scanStatus.textContent = "Could not reach local agent. Make sure it is running.";
+  }
+};
 
-    acceptBtn.onclick = async () => {
-      const extensions = extSelect.value;
-      scanStatus.style.color = "#ffd";
-      scanStatus.textContent = "Attempting to contact local agent...";
-
-      try {
-        const res = await fetch("http://localhost:8765/request-scan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ extensions })
-        });
-        if (!res.ok) {
-          scanStatus.style.color = "#f77";
-          scanStatus.textContent = `Agent responded with HTTP ${res.status}`;
-          return;
-        }
-        const data = await res.json();
-        scanStatus.style.color = "#9f9";
-        scanStatus.textContent = `Scan complete. Files found: ${data.found}`;
-      } catch (err) {
-        console.error(err);
-        scanStatus.style.color = "#f77";
-        scanStatus.textContent = "Could not reach local agent. Make sure it is running.";
-      }
-    };
-
-    installLink.onclick = (e) => {
-      e.preventDefault();
-      alert("Download and run the scanning agent. Then try Accept again.");
-    };
-  </script>
+installLink.onclick = (e) => {
+  e.preventDefault();
+  alert("Download and run the scanning agent. Then try Accept again.");
+};
+</script>
 
 </body>
 </html>
